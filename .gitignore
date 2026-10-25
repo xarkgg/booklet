@@ -1,0 +1,56 @@
+# Dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Generated native projects (Continuous Native Generation)
+/ios
+/android
+
+# Native build artefacts and signing material
+.kotlin/
+*.orig.*
+*.jks
+*.keystore
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.pem
+google-services.json
+GoogleService-Info.plist
+
+# Metro
+.metro-health-check*
+
+# Logs and debug output
+*.log
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# TypeScript
+*.tsbuildinfo
+
+# Environment and secrets
+.env
+.env*.local
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Tooling and agent scratch files
+AGENTS.md
+CLAUDE.md
+.cursor/
+.claude/
+tmp/
+scratch/
+frames/
