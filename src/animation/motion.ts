@@ -19,8 +19,12 @@ export const OPEN = {
   perspective: 1200,
 } as const;
 
+export const CLOSE_SPRING = { dampingRatio: 0.62, duration: 760 } as const;
+
 export const CHROME_OUT = { duration: 150, easing: Easing.in(Easing.quad) } as const;
 
 export const SHEET_SPRING = { dampingRatio: 0.86, duration: 520 } as const;
+
+export const CHROME_RETURN_SPRING = { dampingRatio: 0.7, duration: 520 } as const;
 
 export const PRESS = { scale: 0.96, duration: 120 } as const;

@@ -1,12 +1,28 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Alert, BackHandler, Pressable, StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
-import { useSharedValue } from 'react-native-reanimated';
+import {
+  useAnimatedReaction,
+  useDerivedValue,
+  useSharedValue,
+  withDelay,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
+import {
+  CHROME_OUT,
+  CHROME_RETURN_SPRING,
+  CLOSE_SPRING,
+  OPEN,
+} from '../animation/motion';
 import { keepRecording } from '../audio/storage';
 import { Header } from '../components/Header';
 import { HomeFooter } from '../components/HomeFooter';
 import { Notebook } from '../components/Notebook';
+import type { Page } from '../components/PageFace';
+import { PageSpread } from '../components/PageSpread';
 import { RecordSheet } from '../components/RecordSheet';
 import { WriteSheet } from '../components/WriteSheet';
 import { newId } from '../db/entries';
@@ -15,17 +31,29 @@ import { useEntries } from '../hooks/useEntries';
 import { formatShort, todayKey } from '../lib/dates';
 import { colors } from '../theme';
 
+type Mode = 'home' | 'opening' | 'open' | 'closing';
+
+const haptic = (style: Haptics.ImpactFeedbackStyle) => {
+  Haptics.impactAsync(style).catch(() => {});
+};
+
 export function BookletScreen() {
   const layout = useBookLayout();
   const { entries, add, removeAll } = useEntries();
 
+  const [mode, setMode] = useState<Mode>('home');
+  const [pageIndex, setPageIndex] = useState(0);
   const [writing, setWriting] = useState(false);
   const [recording, setRecording] = useState(false);
+  const [focusId, setFocusId] = useState<string | null>(null);
   const [today, setToday] = useState(todayKey);
 
+  // Motion state, all on the UI thread.
   const open = useSharedValue(0);
   const homeChrome = useSharedValue(1);
   const chrome = useSharedValue(1);
+  const textOpacity = useSharedValue(0);
+  const spreadVisible = useDerivedValue<number>(() => (open.value > 0.999 ? 1 : 0));
 
   // Keep "today" right if the app stays open past midnight.
   useEffect(() => {
@@ -33,21 +61,91 @@ export function BookletScreen() {
     return () => clearInterval(id);
   }, []);
 
+  const pages = useMemo<Page[]>(() => {
+    if (entries.length === 0) {
+      return [{ key: `blank-${today}`, date: today, entry: null }];
+    }
+    return entries.map((e) => ({ key: e.id, date: e.date, entry: e }));
+  }, [entries, today]);
+
+  const index = Math.min(pageIndex, pages.length - 1);
+
+  // After saving a new page, turn the book to it.
+  useEffect(() => {
+    if (!focusId) return;
+    const i = pages.findIndex((p) => p.key === focusId);
+    if (i >= 0) {
+      setPageIndex(i);
+      setFocusId(null);
+    }
+  }, [focusId, pages]);
+
+  const writeDay = today;
+
+  // ── Open / close ────────────────────────────────────────────────────────
+  const openBook = useCallback(() => {
+    if (mode !== 'home') return;
+    setMode('opening');
+    haptic(Haptics.ImpactFeedbackStyle.Medium);
+    textOpacity.value = 0;
+    homeChrome.value = withTiming(0, CHROME_OUT);
+    open.value = withTiming(1, { duration: OPEN.duration, easing: OPEN.easing }, (finished) => {
+      if (!finished) return;
+      textOpacity.value = withTiming(1, { duration: 140 });
+      scheduleOnRN(setMode, 'open');
+    });
+  }, [mode, homeChrome, open, textOpacity]);
+
+  const closeBook = useCallback(() => {
+    if (mode !== 'open') return;
+    setMode('closing');
+    textOpacity.value = withTiming(0, { duration: 80 });
+    homeChrome.value = withDelay(180, withSpring(1, CHROME_RETURN_SPRING));
+    open.value = withDelay(
+      60,
+      withSpring(0, CLOSE_SPRING, (finished) => {
+        if (finished) scheduleOnRN(setMode, 'home');
+      }),
+    );
+  }, [mode, homeChrome, open, textOpacity]);
+
+  // A soft knock when the cover lands shut.
+  useAnimatedReaction(
+    () => open.value <= 0.01,
+    (shut, wasShut) => {
+      if (shut && wasShut === false) scheduleOnRN(haptic, Haptics.ImpactFeedbackStyle.Medium);
+    },
+  );
+
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (mode === 'open') {
+        closeBook();
+        return true;
+      }
+      return mode !== 'home';
+    });
+    return () => sub.remove();
+  }, [mode, closeBook]);
+
+  // ── Data actions ────────────────────────────────────────────────────────
   const saveText = useCallback(
     async (text: string) => {
-      await add({ date: today, text });
+      const entry = await add({ date: writeDay, text });
+      setFocusId(entry.id);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     },
-    [add, today],
+    [add, writeDay],
   );
 
   const saveRecording = useCallback(
     async (tempUri: string, durationMs: number) => {
       const id = newId();
       const audioFile = keepRecording(tempUri, id);
-      await add({ date: today, text: '', audioFile, audioDurationMs: durationMs }, id);
+      await add({ date: writeDay, text: '', audioFile, audioDurationMs: durationMs }, id);
+      setFocusId(id);
     },
-    [add, today],
+    [add, writeDay],
   );
 
   const showSettings = useCallback(() => {
@@ -69,6 +167,7 @@ export function BookletScreen() {
                       style: 'destructive',
                       onPress: () => {
                         removeAll().catch(() => {});
+                        setPageIndex(0);
                       },
                     },
                   ]),
@@ -79,32 +178,55 @@ export function BookletScreen() {
     );
   }, [entries.length, removeAll]);
 
-  const { insets } = layout;
+  const { bookW, bookH, centerX, centerY, insets } = layout;
 
   return (
     <View style={styles.root}>
       <LinearGradient colors={[colors.bgTop, colors.bgBottom]} style={StyleSheet.absoluteFill} />
+
+      {/* Tapping the dark area around the open book closes it. */}
+      {mode === 'open' && (
+        <Pressable style={StyleSheet.absoluteFill} onPress={closeBook} accessibilityLabel="Close the booklet" />
+      )}
 
       <Header
         topInset={insets.top}
         dateLabel={formatShort(new Date())}
         open={open}
         chrome={chrome}
+        onTitlePress={closeBook}
         onMenuPress={showSettings}
       />
 
       <Notebook layout={layout} open={open} title="Dreams" subtitle="written by you" />
 
+      {mode === 'home' && (
+        <Pressable
+          onPress={openBook}
+          style={{ position: 'absolute', left: centerX - bookW / 2, top: centerY - bookH / 2, width: bookW, height: bookH }}
+          accessibilityRole="button"
+          accessibilityLabel="Open your dreams booklet"
+        />
+      )}
+
+      <PageSpread
+        layout={layout}
+        pages={pages}
+        index={index}
+        visible={spreadVisible}
+        textOpacity={textOpacity}
+      />
+
       <HomeFooter
         bottomInset={insets.bottom}
         shown={homeChrome}
-        interactive
+        interactive={mode === 'home'}
         onRecord={() => setRecording(true)}
         onType={() => setWriting(true)}
       />
 
-      <WriteSheet visible={writing} day={today} onSave={saveText} onClosed={() => setWriting(false)} />
-      <RecordSheet visible={recording} day={today} onSave={saveRecording} onClosed={() => setRecording(false)} />
+      <WriteSheet visible={writing} day={writeDay} onSave={saveText} onClosed={() => setWriting(false)} />
+      <RecordSheet visible={recording} day={writeDay} onSave={saveRecording} onClosed={() => setRecording(false)} />
     </View>
   );
 }
