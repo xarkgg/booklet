@@ -1,0 +1,30 @@
+export const colors = {
+  bgTop: '#232125',
+  bgBottom: '#1a181b',
+  cover: '#3d3b3e',
+  coverEdge: '#2f2d30',
+  coverText: '#a8a5a9',
+  coverSubtle: '#6f6c70',
+  paper: '#b7b5b9',
+  paperLight: '#bdbbbf',
+  paperFold: '#949093',
+  paperEdge: '#d6d3d6',
+  ink: '#3a3739',
+  inkMuted: '#6b676a',
+  sheet: '#3c3a3f',
+  sheetHandle: '#5d5a60',
+  text: '#ece9ed',
+  textMuted: '#a9a6aa',
+  textFaint: '#6d6a6e',
+  pillTop: '#646165',
+  pillBottom: '#4c4a4d',
+  pillDivider: '#3a383b',
+  danger: '#e0716b',
+} as const;
+
+export const fonts = {
+  display: 'PlayfairDisplay_400Regular',
+  body: 'NotoSerif_400Regular',
+  bodyItalic: 'NotoSerif_400Regular_Italic',
+  bodyMedium: 'NotoSerif_500Medium',
+} as const;
