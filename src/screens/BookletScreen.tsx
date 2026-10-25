@@ -18,8 +18,10 @@ import {
   COLLAPSE_SPRING,
   EXPAND,
   OPEN,
+  SHEET_SPRING,
 } from '../animation/motion';
 import { keepRecording } from '../audio/storage';
+import { CalendarSheet } from '../components/CalendarSheet';
 import { EntryCard } from '../components/EntryCard';
 import { Header } from '../components/Header';
 import { HomeFooter } from '../components/HomeFooter';
@@ -31,7 +33,7 @@ import { WriteSheet } from '../components/WriteSheet';
 import { newId } from '../db/entries';
 import { useBookLayout } from '../hooks/useBookLayout';
 import { useEntries } from '../hooks/useEntries';
-import { formatShort, todayKey } from '../lib/dates';
+import { formatShort, todayKey, type DayKey } from '../lib/dates';
 import { colors } from '../theme';
 
 type Mode = 'home' | 'opening' | 'open' | 'closing';
@@ -45,6 +47,7 @@ export function BookletScreen() {
   const { entries, add, updateText, remove, removeAll } = useEntries();
 
   const [mode, setMode] = useState<Mode>('home');
+  const [selectedDay, setSelectedDay] = useState<DayKey | null>(null);
   const [pageIndex, setPageIndex] = useState(0);
   const [expanded, setExpanded] = useState(false);
   const [writing, setWriting] = useState(false);
@@ -55,6 +58,7 @@ export function BookletScreen() {
   // Motion state, all on the UI thread.
   const open = useSharedValue(0);
   const homeChrome = useSharedValue(1);
+  const sheetShown = useSharedValue(0);
   const chrome = useSharedValue(1);
   const textOpacity = useSharedValue(0);
   const expand = useSharedValue(0);
@@ -68,12 +72,15 @@ export function BookletScreen() {
   }, []);
 
   const pages = useMemo<Page[]>(() => {
-    if (entries.length === 0) {
-      return [{ key: `blank-${today}`, date: today, entry: null }];
+    const list = selectedDay ? entries.filter((e) => e.date === selectedDay) : entries;
+    if (list.length === 0) {
+      const day = selectedDay ?? today;
+      return [{ key: `blank-${day}`, date: day, entry: null }];
     }
-    return entries.map((e) => ({ key: e.id, date: e.date, entry: e }));
-  }, [entries, today]);
+    return list.map((e) => ({ key: e.id, date: e.date, entry: e }));
+  }, [entries, selectedDay, today]);
 
+  const daysWithEntries = useMemo(() => new Set(entries.map((e) => e.date)), [entries]);
   const index = Math.min(pageIndex, pages.length - 1);
   const page = pages[index];
 
@@ -87,7 +94,7 @@ export function BookletScreen() {
     }
   }, [focusId, pages]);
 
-  const writeDay = today;
+  const writeDay = selectedDay ?? today;
 
   // ── Open / close ────────────────────────────────────────────────────────
   const openBook = useCallback(() => {
@@ -96,17 +103,19 @@ export function BookletScreen() {
     haptic(Haptics.ImpactFeedbackStyle.Medium);
     textOpacity.value = 0;
     homeChrome.value = withTiming(0, CHROME_OUT);
+    sheetShown.value = withDelay(130, withSpring(1, SHEET_SPRING));
     open.value = withTiming(1, { duration: OPEN.duration, easing: OPEN.easing }, (finished) => {
       if (!finished) return;
       textOpacity.value = withTiming(1, { duration: 140 });
       scheduleOnRN(setMode, 'open');
     });
-  }, [mode, homeChrome, open, textOpacity]);
+  }, [mode, homeChrome, open, sheetShown, textOpacity]);
 
   const closeBook = useCallback(() => {
     if (mode !== 'open' || expanded) return;
     setMode('closing');
     textOpacity.value = withTiming(0, { duration: 80 });
+    sheetShown.value = withTiming(0, { duration: 120 });
     homeChrome.value = withDelay(180, withSpring(1, CHROME_RETURN_SPRING));
     open.value = withDelay(
       60,
@@ -114,7 +123,7 @@ export function BookletScreen() {
         if (finished) scheduleOnRN(setMode, 'home');
       }),
     );
-  }, [mode, expanded, homeChrome, open, textOpacity]);
+  }, [mode, expanded, homeChrome, open, sheetShown, textOpacity]);
 
   // A soft knock when the cover lands shut.
   useAnimatedReaction(
@@ -225,6 +234,11 @@ export function BookletScreen() {
     [pages.length],
   );
 
+  const selectDay = useCallback((day: DayKey | null) => {
+    setSelectedDay(day);
+    setPageIndex(0);
+  }, []);
+
   const { bookW, bookH, centerX, centerY, insets } = layout;
 
   return (
@@ -273,6 +287,15 @@ export function BookletScreen() {
         interactive={mode === 'home'}
         onRecord={() => setRecording(true)}
         onType={() => setWriting(true)}
+      />
+
+      <CalendarSheet
+        bottomInset={insets.bottom}
+        shown={sheetShown}
+        chrome={chrome}
+        daysWithEntries={daysWithEntries}
+        selectedDay={selectedDay}
+        onSelectDay={selectDay}
       />
 
       {expanded && (
