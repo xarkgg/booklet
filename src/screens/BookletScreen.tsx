@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, BackHandler, Pressable, StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
-import {
+import Animated, {
   useAnimatedReaction,
   useDerivedValue,
   useSharedValue,
@@ -15,9 +15,12 @@ import {
   CHROME_OUT,
   CHROME_RETURN_SPRING,
   CLOSE_SPRING,
+  COLLAPSE_SPRING,
+  EXPAND,
   OPEN,
 } from '../animation/motion';
 import { keepRecording } from '../audio/storage';
+import { EntryCard } from '../components/EntryCard';
 import { Header } from '../components/Header';
 import { HomeFooter } from '../components/HomeFooter';
 import { Notebook } from '../components/Notebook';
@@ -39,10 +42,11 @@ const haptic = (style: Haptics.ImpactFeedbackStyle) => {
 
 export function BookletScreen() {
   const layout = useBookLayout();
-  const { entries, add, removeAll } = useEntries();
+  const { entries, add, updateText, remove, removeAll } = useEntries();
 
   const [mode, setMode] = useState<Mode>('home');
   const [pageIndex, setPageIndex] = useState(0);
+  const [expanded, setExpanded] = useState(false);
   const [writing, setWriting] = useState(false);
   const [recording, setRecording] = useState(false);
   const [focusId, setFocusId] = useState<string | null>(null);
@@ -53,7 +57,9 @@ export function BookletScreen() {
   const homeChrome = useSharedValue(1);
   const chrome = useSharedValue(1);
   const textOpacity = useSharedValue(0);
-  const spreadVisible = useDerivedValue<number>(() => (open.value > 0.999 ? 1 : 0));
+  const expand = useSharedValue(0);
+  const drag = useSharedValue(0);
+  const spreadVisible = useDerivedValue<number>(() => (open.value > 0.999 && expand.value <= 0 ? 1 : 0));
 
   // Keep "today" right if the app stays open past midnight.
   useEffect(() => {
@@ -69,6 +75,7 @@ export function BookletScreen() {
   }, [entries, today]);
 
   const index = Math.min(pageIndex, pages.length - 1);
+  const page = pages[index];
 
   // After saving a new page, turn the book to it.
   useEffect(() => {
@@ -97,7 +104,7 @@ export function BookletScreen() {
   }, [mode, homeChrome, open, textOpacity]);
 
   const closeBook = useCallback(() => {
-    if (mode !== 'open') return;
+    if (mode !== 'open' || expanded) return;
     setMode('closing');
     textOpacity.value = withTiming(0, { duration: 80 });
     homeChrome.value = withDelay(180, withSpring(1, CHROME_RETURN_SPRING));
@@ -107,7 +114,7 @@ export function BookletScreen() {
         if (finished) scheduleOnRN(setMode, 'home');
       }),
     );
-  }, [mode, homeChrome, open, textOpacity]);
+  }, [mode, expanded, homeChrome, open, textOpacity]);
 
   // A soft knock when the cover lands shut.
   useAnimatedReaction(
@@ -117,8 +124,34 @@ export function BookletScreen() {
     },
   );
 
+  // ── Expand / collapse a page ────────────────────────────────────────────
+  const expandPage = useCallback(() => {
+    if (mode !== 'open' || expanded) return;
+    if (!page.entry) {
+      setWriting(true);
+      return;
+    }
+    setExpanded(true);
+    haptic(Haptics.ImpactFeedbackStyle.Soft);
+    drag.value = 0;
+    chrome.value = withTiming(0, { duration: 130 });
+    expand.value = withTiming(1, { duration: EXPAND.duration, easing: EXPAND.easing });
+  }, [mode, expanded, page, chrome, drag, expand]);
+
+  const collapsePage = useCallback(() => {
+    drag.value = withTiming(0, { duration: 320 });
+    chrome.value = withDelay(180, withSpring(1, CHROME_RETURN_SPRING));
+    expand.value = withSpring(0, COLLAPSE_SPRING, (finished) => {
+      if (finished) scheduleOnRN(setExpanded, false);
+    });
+  }, [chrome, drag, expand]);
+
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (expanded) {
+        collapsePage();
+        return true;
+      }
       if (mode === 'open') {
         closeBook();
         return true;
@@ -126,7 +159,7 @@ export function BookletScreen() {
       return mode !== 'home';
     });
     return () => sub.remove();
-  }, [mode, closeBook]);
+  }, [expanded, mode, collapsePage, closeBook]);
 
   // ── Data actions ────────────────────────────────────────────────────────
   const saveText = useCallback(
@@ -147,6 +180,13 @@ export function BookletScreen() {
     },
     [add, writeDay],
   );
+
+  const deleteCurrent = useCallback(async () => {
+    if (!page.entry) return;
+    const id = page.entry.id;
+    collapsePage();
+    await remove(id);
+  }, [page, collapsePage, remove]);
 
   const showSettings = useCallback(() => {
     Alert.alert(
@@ -192,7 +232,7 @@ export function BookletScreen() {
       <LinearGradient colors={[colors.bgTop, colors.bgBottom]} style={StyleSheet.absoluteFill} />
 
       {/* Tapping the dark area around the open book closes it. */}
-      {mode === 'open' && (
+      {mode === 'open' && !expanded && (
         <Pressable style={StyleSheet.absoluteFill} onPress={closeBook} accessibilityLabel="Close the booklet" />
       )}
 
@@ -221,9 +261,10 @@ export function BookletScreen() {
         pages={pages}
         index={index}
         onTurn={turnPage}
+        onTapPage={expandPage}
         visible={spreadVisible}
         textOpacity={textOpacity}
-        interactive={mode === 'open'}
+        interactive={mode === 'open' && !expanded}
       />
 
       <HomeFooter
@@ -233,6 +274,27 @@ export function BookletScreen() {
         onRecord={() => setRecording(true)}
         onType={() => setWriting(true)}
       />
+
+      {expanded && (
+        <Animated.View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+          <EntryCard
+            key={page.key}
+            layout={layout}
+            page={page}
+            position={index + 1}
+            count={pages.length}
+            expand={expand}
+            drag={drag}
+            onDismiss={collapsePage}
+            onSaveText={(text) => {
+              if (page.entry) updateText(page.entry.id, text).catch(() => {});
+            }}
+            onDelete={() => {
+              deleteCurrent().catch(() => {});
+            }}
+          />
+        </Animated.View>
+      )}
 
       <WriteSheet visible={writing} day={writeDay} onSave={saveText} onClosed={() => setWriting(false)} />
       <RecordSheet visible={recording} day={writeDay} onSave={saveRecording} onClosed={() => setRecording(false)} />

@@ -22,9 +22,7 @@ export const OPEN = {
 export const CLOSE_SPRING = { dampingRatio: 0.62, duration: 760 } as const;
 
 export const CHROME_OUT = { duration: 150, easing: Easing.in(Easing.quad) } as const;
-
 export const SHEET_SPRING = { dampingRatio: 0.86, duration: 520 } as const;
-
 export const CHROME_RETURN_SPRING = { dampingRatio: 0.7, duration: 520 } as const;
 
 export const TURN = {
@@ -37,5 +35,17 @@ export const TURN = {
   peelDegrees: 9,
   rubberBand: 0.25,
 } as const;
+
+export const EXPAND = {
+  duration: 520,
+  easing: Easing.bezier(0.3, 0, 0.1, 1),
+  liftEnd: 0.35,
+  liftScale: 0.97,
+  inset: 6,
+  radius: 14,
+} as const;
+
+export const COLLAPSE_SPRING = { dampingRatio: 0.86, duration: 560 } as const;
+export const DISMISS = { distance: 120, velocity: 800 } as const;
 
 export const PRESS = { scale: 0.96, duration: 120 } as const;
