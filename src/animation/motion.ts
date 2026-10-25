@@ -27,4 +27,15 @@ export const SHEET_SPRING = { dampingRatio: 0.86, duration: 520 } as const;
 
 export const CHROME_RETURN_SPRING = { dampingRatio: 0.7, duration: 520 } as const;
 
+export const TURN = {
+  /** Drag distance (as a fraction of the spread height) for a full turn. */
+  dragFraction: 0.55,
+  commitProgress: 0.35,
+  commitVelocity: 600,
+  duration: 300,
+  easing: Easing.out(Easing.cubic),
+  peelDegrees: 9,
+  rubberBand: 0.25,
+} as const;
+
 export const PRESS = { scale: 0.96, duration: 120 } as const;

@@ -178,6 +178,13 @@ export function BookletScreen() {
     );
   }, [entries.length, removeAll]);
 
+  const turnPage = useCallback(
+    (dir: 1 | -1) => {
+      setPageIndex((i) => Math.max(0, Math.min(pages.length - 1, Math.min(i, pages.length - 1) + dir)));
+    },
+    [pages.length],
+  );
+
   const { bookW, bookH, centerX, centerY, insets } = layout;
 
   return (
@@ -213,8 +220,10 @@ export function BookletScreen() {
         layout={layout}
         pages={pages}
         index={index}
+        onTurn={turnPage}
         visible={spreadVisible}
         textOpacity={textOpacity}
+        interactive={mode === 'open'}
       />
 
       <HomeFooter
