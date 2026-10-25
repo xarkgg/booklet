@@ -8,6 +8,7 @@ import { PlayfairDisplay_400Regular } from '@expo-google-fonts/playfair-display/
 import { NotoSerif_400Regular } from '@expo-google-fonts/noto-serif/400Regular';
 import { NotoSerif_400Regular_Italic } from '@expo-google-fonts/noto-serif/400Regular_Italic';
 import { NotoSerif_500Medium } from '@expo-google-fonts/noto-serif/500Medium';
+import { EntriesProvider } from './src/hooks/useEntries';
 import { View } from 'react-native';
 import { colors } from './src/theme';
 
@@ -31,8 +32,10 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.bgBottom }}>
       <SafeAreaProvider>
-        <StatusBar style="light" />
-        <View style={{ flex: 1 }} />
+        <EntriesProvider>
+          <StatusBar style="light" />
+          <View style={{ flex: 1 }} />
+        </EntriesProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
