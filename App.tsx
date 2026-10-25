@@ -9,7 +9,7 @@ import { NotoSerif_400Regular } from '@expo-google-fonts/noto-serif/400Regular';
 import { NotoSerif_400Regular_Italic } from '@expo-google-fonts/noto-serif/400Regular_Italic';
 import { NotoSerif_500Medium } from '@expo-google-fonts/noto-serif/500Medium';
 import { EntriesProvider } from './src/hooks/useEntries';
-import { View } from 'react-native';
+import { BookletScreen } from './src/screens/BookletScreen';
 import { colors } from './src/theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -34,7 +34,7 @@ export default function App() {
       <SafeAreaProvider>
         <EntriesProvider>
           <StatusBar style="light" />
-          <View style={{ flex: 1 }} />
+          <BookletScreen />
         </EntriesProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
