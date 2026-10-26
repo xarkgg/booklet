@@ -73,9 +73,19 @@ leading.
   600 pt/s, otherwise it falls back. Completion is
   `withTiming(1, { duration: 300, easing: out(cubic) })`, about 470 ms total in
   the recording including the finger travel.
-- At the first or last page the leaf rubber-bands (progress × 0.25) and springs
-  back.
-- **Haptics:** light impact when a turn commits.
+- **Edge bounce:** past the first or last page (including a book with a single
+  page, or only the blank "Tap to write" page), the leaf still follows the
+  finger, with rubber-band resistance instead of a hard stop. With `d` = drag
+  distance / (spread height × 0.55), the leaf angle is
+  `12° × (1 − 1 / (2·|d| + 1))`: half the cap at one half of a full-turn drag,
+  two thirds at a full one, never more than 12°. Both ends behave the same way
+  (drag down on the oldest page, drag up on the newest). On release it settles
+  back with `withSpring(0, { damping: 22, stiffness: 220, mass: 1 })` (damping
+  ratio ≈ 0.74, so it overshoots rest by under half a degree and is still in
+  about 350 ms). A soft haptic fires once per drag when the limit is first hit.
+  With reduced motion the cap is 5° and the return is a 200 ms ease-out
+  (`bezier(0.23, 1, 0.32, 1)`). Constants: `EDGE`.
+- **Haptics:** light impact when a turn commits; soft impact at an edge.
 
 ## 3. Lift a page into a full-screen card (2.45 s → 2.95 s)
 

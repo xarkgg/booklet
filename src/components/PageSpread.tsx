@@ -12,6 +12,7 @@ import Animated, {
   Extrapolation,
   interpolate,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withSpring,
   withTiming,
@@ -19,7 +20,7 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
-import { TURN } from '../animation/motion';
+import { EDGE, TURN } from '../animation/motion';
 import type { BookLayout } from '../hooks/useBookLayout';
 import { colors } from '../theme';
 import { PageFace, type Page } from './PageFace';
@@ -95,6 +96,10 @@ export function PageSpread({
   // Mirrored onto the UI thread so the gesture never reads a stale page.
   const hasNext = useSharedValue(index < count - 1);
   const hasPrev = useSharedValue(index > 0);
+  // Set once per drag when the finger first pushes past the first or last page.
+  const edgeHit = useSharedValue(false);
+  const reduceMotion = useReducedMotion();
+  const edgeMax = (reduceMotion ? EDGE.reducedMaxDegrees : EDGE.maxDegrees) / 180;
 
   useLayoutEffect(() => {
     hasNext.value = index < count - 1;
@@ -110,16 +115,31 @@ export function PageSpread({
     [onTurn],
   );
 
+  const bumpEdge = useCallback(() => Haptics.impact('soft'), []);
+
   const pan = usePanGesture({
     enabled: interactive,
     activeOffsetY: [-12, 12],
     failOffsetX: [-30, 30],
+    onActivate: () => {
+      'worklet';
+      edgeHit.value = false;
+    },
     onUpdate: (e) => {
       'worklet';
-      let t = e.translationY / (h * TURN.dragFraction);
-      t = Math.max(-1, Math.min(1, t));
-      if ((t > 0 && !hasNext.value) || (t < 0 && !hasPrev.value)) t *= TURN.rubberBand;
-      turn.value = t;
+      const d = e.translationY / (h * TURN.dragFraction);
+      const atEdge = (d > 0 && !hasNext.value) || (d < 0 && !hasPrev.value);
+      if (atEdge) {
+        // Rubber band: approaches edgeMax asymptotically, never a hard stop.
+        const x = Math.abs(d) * EDGE.resistance;
+        turn.value = Math.sign(d) * edgeMax * (1 - 1 / (x + 1));
+        if (!edgeHit.value) {
+          edgeHit.value = true;
+          scheduleOnRN(bumpEdge);
+        }
+      } else {
+        turn.value = Math.max(-1, Math.min(1, d));
+      }
     },
     onDeactivate: (e) => {
       'worklet';
@@ -131,6 +151,8 @@ export function PageSpread({
         turn.value = withTiming(dir, { duration: TURN.duration, easing: TURN.easing }, (finished) => {
           if (finished) scheduleOnRN(commit, dir);
         });
+      } else if (!allowed) {
+        turn.value = reduceMotion ? withTiming(0, EDGE.reducedReturn) : withSpring(0, EDGE.spring);
       } else {
         turn.value = withSpring(0, { dampingRatio: 0.8, duration: 380 });
       }

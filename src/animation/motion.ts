@@ -33,7 +33,19 @@ export const TURN = {
   duration: 300,
   easing: Easing.out(Easing.cubic),
   peelDegrees: 9,
-  rubberBand: 0.25,
+} as const;
+
+/**
+ * Past the first or last page the leaf follows the finger with rubber-band
+ * resistance and settles back. `maxDegrees` is the asymptote of the leaf angle;
+ * `resistance` sets how fast it is approached (higher = stiffer).
+ */
+export const EDGE = {
+  maxDegrees: 12,
+  reducedMaxDegrees: 5,
+  resistance: 2,
+  spring: { damping: 22, stiffness: 220, mass: 1 },
+  reducedReturn: { duration: 200, easing: Easing.bezier(0.23, 1, 0.32, 1) },
 } as const;
 
 export const EXPAND = {
