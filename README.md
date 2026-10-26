@@ -58,7 +58,8 @@ close the book. Record appears only in browsers that allow microphone
 recording; haptics are silent on the web.
 
 To publish it, build the static site and upload the `dist/` folder to any
-static host (Netlify, Vercel, GitHub Pages, Cloudflare Pages):
+static host (Netlify, Vercel, GitHub Pages, Cloudflare Pages). On Vercel,
+`vercel.json` already sets the build command and serves `dist/`:
 
 ```bash
 npx expo export --platform web
