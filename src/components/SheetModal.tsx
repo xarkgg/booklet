@@ -4,6 +4,7 @@ import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } fr
 import { scheduleOnRN } from 'react-native-worklets';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SHEET_SPRING } from '../animation/motion';
+import { useDesktop } from '../hooks/useDesktop';
 import { colors } from '../theme';
 
 type Props = {
@@ -14,9 +15,13 @@ type Props = {
   dismissOnBackdrop?: boolean;
 };
 
-/** Bottom sheet over a dimmed backdrop, with the same spring as the calendar sheet. */
+/**
+ * Bottom sheet over a dimmed backdrop, with the same spring as the calendar sheet.
+ * On a desktop browser window it is a centred dialog instead.
+ */
 export function SheetModal({ visible, onClosed, children, dismissOnBackdrop = true }: Props) {
   const insets = useSafeAreaInsets();
+  const desktop = useDesktop();
   const progress = useSharedValue(0);
 
   useEffect(() => {
@@ -30,9 +35,14 @@ export function SheetModal({ visible, onClosed, children, dismissOnBackdrop = tr
   }, [onClosed, progress]);
 
   const backdrop = useAnimatedStyle(() => ({ opacity: progress.value * 0.55 }));
-  const panel = useAnimatedStyle(() => ({
-    transform: [{ translateY: (1 - progress.value) * 520 }],
-  }));
+  const panel = useAnimatedStyle(() =>
+    desktop
+      ? {
+          opacity: Math.min(1, progress.value * 1.6),
+          transform: [{ translateY: (1 - progress.value) * 32 }, { scale: 0.97 + progress.value * 0.03 }],
+        }
+      : { transform: [{ translateY: (1 - progress.value) * 520 }] },
+  );
 
   return (
     <Modal visible={visible} transparent animationType="none" statusBarTranslucent navigationBarTranslucent onRequestClose={close}>
@@ -40,13 +50,21 @@ export function SheetModal({ visible, onClosed, children, dismissOnBackdrop = tr
         <Animated.View style={[StyleSheet.absoluteFill, styles.backdrop, backdrop]}>
           <Pressable style={styles.fill} onPress={dismissOnBackdrop ? close : undefined} accessibilityLabel="Close" />
         </Animated.View>
-        <View style={styles.fill} pointerEvents="box-none" />
-        <View style={styles.panelWrap}>
-          <Animated.View style={[styles.panel, { paddingBottom: insets.bottom + 16 }, panel]}>
-            <View style={styles.handle} />
-            {children(close)}
-          </Animated.View>
-        </View>
+        {desktop ? (
+          <View style={styles.dialogWrap} pointerEvents="box-none">
+            <Animated.View style={[styles.panel, styles.dialog, panel]}>{children(close)}</Animated.View>
+          </View>
+        ) : (
+          <>
+            <View style={styles.fill} pointerEvents="box-none" />
+            <View style={styles.panelWrap}>
+              <Animated.View style={[styles.panel, { paddingBottom: insets.bottom + 16 }, panel]}>
+                <View style={styles.handle} />
+                {children(close)}
+              </Animated.View>
+            </View>
+          </>
+        )}
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -70,6 +88,20 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,
     paddingHorizontal: 18,
+  },
+  dialogWrap: {
+    ...StyleSheet.absoluteFill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  dialog: {
+    width: '100%',
+    maxWidth: 520,
+    marginHorizontal: 0,
+    borderRadius: 22,
+    paddingTop: 18,
+    paddingBottom: 18,
   },
   handle: {
     alignSelf: 'center',

@@ -33,6 +33,12 @@ type Props = {
   onDelete: () => void;
 };
 
+function desktopCard(W: number, H: number) {
+  const width = Math.min(720, W - 64);
+  const height = Math.min(H * 0.85, H - 48);
+  return { left: (W - width) / 2, top: (H - height) / 2, width, height };
+}
+
 function MoreIcon() {
   return (
     <Svg width={22} height={22} viewBox="0 0 22 22">
@@ -60,12 +66,15 @@ export function EntryCard({ layout, page, position, count, expand, drag, onDismi
     setDraft(entry?.text ?? '');
   }, [entry?.text]);
 
-  const full = {
-    left: EXPAND.inset,
-    top: insets.top + 4,
-    width: W - EXPAND.inset * 2,
-    height: H - insets.top - 4 - EXPAND.inset,
-  };
+  // Phone: the whole screen. Desktop web: a large card centred in the window.
+  const full = layout.desktop
+    ? desktopCard(W, H)
+    : {
+        left: EXPAND.inset,
+        top: insets.top + 4,
+        width: W - EXPAND.inset * 2,
+        height: H - insets.top - 4 - EXPAND.inset,
+      };
 
   const frame = useAnimatedStyle(() => {
     const e = expand.value;
@@ -161,7 +170,7 @@ export function EntryCard({ layout, page, position, count, expand, drag, onDismi
         </Animated.View>
 
         {/* The page at reading size. */}
-        <Animated.View style={[styles.full, largeText]}>
+        <Animated.View style={[styles.full, layout.desktop && styles.fullDesktop, largeText]}>
           <View style={styles.topRow}>
             <Text style={styles.date}>{formatLong(page.date)}</Text>
             {editing ? (
@@ -219,6 +228,10 @@ const styles = StyleSheet.create({
     bottom: 0,
     paddingHorizontal: 22,
     paddingTop: 18,
+  },
+  fullDesktop: {
+    paddingHorizontal: 40,
+    paddingTop: 30,
   },
   topRow: {
     flexDirection: 'row',
