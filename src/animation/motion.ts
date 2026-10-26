@@ -65,3 +65,6 @@ export const EASE_OUT = Easing.bezier(0.23, 1, 0.32, 1);
 
 /** Press feedback: scale on press-in, ease back on release. Reduced motion dims instead. */
 export const PRESS = { scale: 0.97, smallScale: 0.95, duration: 140, releaseDuration: 160, reducedOpacity: 0.7 } as const;
+
+/** Page text fades in when the visible page changes without a turn (new entry, day picked). */
+export const REVEAL = { delay: 120, duration: 220 } as const;

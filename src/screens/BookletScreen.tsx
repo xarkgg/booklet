@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BackHandler, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
@@ -15,8 +15,10 @@ import {
   CHROME_RETURN_SPRING,
   CLOSE_SPRING,
   COLLAPSE_SPRING,
+  EASE_OUT,
   EXPAND,
   OPEN,
+  REVEAL,
   SHEET_SPRING,
 } from '../animation/motion';
 import { keepRecording } from '../audio/storage';
@@ -94,6 +96,23 @@ export function BookletScreen() {
       setFocusId(null);
     }
   }, [focusId, pages]);
+
+  // When the visible page changes without a turn (a new entry was saved, a day
+  // was picked), fade its text in instead of letting it swap in place.
+  const turnedRef = useRef(false);
+  const shownKey = useRef(page.key);
+  useEffect(() => {
+    if (shownKey.current === page.key) return;
+    shownKey.current = page.key;
+    if (turnedRef.current) {
+      turnedRef.current = false;
+      return;
+    }
+    if (mode !== 'open' || expanded) return;
+    const fade = withTiming(1, { duration: REVEAL.duration, easing: EASE_OUT });
+    textOpacity.value = 0;
+    textOpacity.value = writing || recording ? withDelay(REVEAL.delay, fade) : fade;
+  }, [page.key, mode, expanded, writing, recording, textOpacity]);
 
   const writeDay = selectedDay ?? today;
 
@@ -247,6 +266,7 @@ export function BookletScreen() {
 
   const turnPage = useCallback(
     (dir: 1 | -1) => {
+      turnedRef.current = true;
       setPageIndex((i) => Math.max(0, Math.min(pages.length - 1, Math.min(i, pages.length - 1) + dir)));
     },
     [pages.length],

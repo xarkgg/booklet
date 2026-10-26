@@ -139,6 +139,12 @@ in the recording.
   `bezier(0.23, 1, 0.32, 1)`; transform only, never from or to 0. With reduced
   motion they dim to 70 % opacity instead of scaling. Shared through
   `usePressFeedback` and `PRESS`.
+- **Page reveal:** when the visible page changes without a turn (a new entry
+  is saved and the book jumps to it, or a calendar day is picked), its text
+  fades in over 220 ms ease-out (`bezier(0.23, 1, 0.32, 1)`) instead of
+  swapping in place. After saving from a sheet it waits 120 ms so the fade
+  lands as the sheet leaves. Opacity only, so it is unchanged under reduced
+  motion. Turns never trigger it. Constants: `REVEAL`.
 - **Writing and recording sheets:** slide up with the same spring as the
   calendar sheet over a dimmed backdrop.
 
