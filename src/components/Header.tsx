@@ -6,6 +6,8 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 import Svg, { Circle, Line } from 'react-native-svg';
+import { PRESS } from '../animation/motion';
+import { usePressFeedback } from '../animation/usePressFeedback';
 import { HEADER_HEIGHT } from '../hooks/useBookLayout';
 import { colors, fonts } from '../theme';
 
@@ -37,6 +39,7 @@ function SlidersIcon({ color }: { color: string }) {
  * open progress, overlapping briefly as in the reference.
  */
 export function Header({ topInset, dateLabel, open, chrome, onTitlePress, onMenuPress }: Props) {
+  const menuPress = usePressFeedback(PRESS.smallScale);
   const homeTitle = useAnimatedStyle(() => ({
     opacity: interpolate(open.value, [0.05, 0.5], [1, 0], Extrapolation.CLAMP),
   }));
@@ -54,12 +57,15 @@ export function Header({ topInset, dateLabel, open, chrome, onTitlePress, onMenu
         <Text style={styles.date}>{dateLabel}</Text>
         <Pressable
           onPress={onMenuPress}
+          {...menuPress.handlers}
           hitSlop={12}
           style={styles.menu}
           accessibilityRole="button"
           accessibilityLabel="Booklet settings"
         >
-          <SlidersIcon color={colors.textMuted} />
+          <Animated.View style={menuPress.style}>
+            <SlidersIcon color={colors.textMuted} />
+          </Animated.View>
         </Pressable>
       </View>
       <Pressable onPress={onTitlePress} accessibilityRole="header" style={styles.titles}>

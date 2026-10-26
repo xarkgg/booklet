@@ -1,8 +1,8 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 import Svg, { Line, Path, Rect } from 'react-native-svg';
-import { PRESS } from '../animation/motion';
+import { usePressFeedback } from '../animation/usePressFeedback';
 import { canRecord } from '../audio/canRecord';
 import { colors, fonts } from '../theme';
 
@@ -36,18 +36,12 @@ function Half({
   icon: React.ReactNode;
   onPress: () => void;
 }) {
-  const scale = useSharedValue(1);
-  const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  const { style, handlers } = usePressFeedback();
   return (
     <Pressable
       style={styles.half}
       onPress={onPress}
-      onPressIn={() => {
-        scale.value = withTiming(PRESS.scale, { duration: PRESS.duration });
-      }}
-      onPressOut={() => {
-        scale.value = withSpring(1, { dampingRatio: 0.6, duration: 360 });
-      }}
+      {...handlers}
       accessibilityRole="button"
       accessibilityLabel={label}
     >

@@ -60,4 +60,8 @@ export const EXPAND = {
 export const COLLAPSE_SPRING = { dampingRatio: 0.86, duration: 560 } as const;
 export const DISMISS = { distance: 120, velocity: 800 } as const;
 
-export const PRESS = { scale: 0.96, duration: 120 } as const;
+/** Shared ease-out for small UI responses. */
+export const EASE_OUT = Easing.bezier(0.23, 1, 0.32, 1);
+
+/** Press feedback: scale on press-in, ease back on release. Reduced motion dims instead. */
+export const PRESS = { scale: 0.97, smallScale: 0.95, duration: 140, releaseDuration: 160, reducedOpacity: 0.7 } as const;

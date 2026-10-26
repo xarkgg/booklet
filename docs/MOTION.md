@@ -133,8 +133,12 @@ in the recording.
 
 - **Calendar sheet expand:** drag the handle (or tap the month) to grow the
   week strip into the full month. Spring, `dampingRatio 0.9`.
-- **Pill press:** each half scales to 0.96 on press-in (120 ms) and springs
-  back.
+- **Press feedback:** the Record/Type pill halves scale to 0.97; the calendar
+  day bubbles and the settings button scale to 0.95 (they are small, so 0.97
+  would not read). Press-in is 140 ms and release 160 ms, both ease-out
+  `bezier(0.23, 1, 0.32, 1)`; transform only, never from or to 0. With reduced
+  motion they dim to 70 % opacity instead of scaling. Shared through
+  `usePressFeedback` and `PRESS`.
 - **Writing and recording sheets:** slide up with the same spring as the
   calendar sheet over a dimmed backdrop.
 

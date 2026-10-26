@@ -12,6 +12,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import Svg, { Circle, Path } from 'react-native-svg';
+import { PRESS } from '../animation/motion';
+import { usePressFeedback } from '../animation/usePressFeedback';
 import { SHEET_COLLAPSED } from '../hooks/useBookLayout';
 import {
   WEEK_LABELS,
@@ -73,15 +75,19 @@ type DayCellProps = {
 };
 
 function DayCell({ date, dimmed, hasEntry, selected, today, onPress }: DayCellProps) {
+  const press = usePressFeedback(PRESS.smallScale);
   return (
     <Pressable
       onPress={onPress}
+      {...press.handlers}
       style={styles.cell}
       accessibilityRole="button"
       accessibilityState={{ selected }}
       accessibilityLabel={`${date.toDateString()}${hasEntry ? ', has entries' : ''}`}
     >
-      <View style={[styles.dayBubble, selected && styles.daySelected, today && !selected && styles.dayToday]}>
+      <Animated.View
+        style={[styles.dayBubble, selected && styles.daySelected, today && !selected && styles.dayToday, press.style]}
+      >
         <Text
           style={[
             styles.dayText,
@@ -92,7 +98,7 @@ function DayCell({ date, dimmed, hasEntry, selected, today, onPress }: DayCellPr
         >
           {date.getDate()}
         </Text>
-      </View>
+      </Animated.View>
       <View style={[styles.dot, { opacity: hasEntry ? 1 : 0 }]} />
     </Pressable>
   );
