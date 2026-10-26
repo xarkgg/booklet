@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useScreenSize } from './useScreenSize';
 
 export const HEADER_HEIGHT = 128;
 export const SHEET_COLLAPSED = 138;
@@ -13,7 +13,7 @@ export type BookLayout = ReturnType<typeof useBookLayout>;
  * scaled down on short screens so the spread always clears the calendar sheet.
  */
 export function useBookLayout() {
-  const { width: W, height: H } = useWindowDimensions();
+  const { width: W, height: H } = useScreenSize();
   const insets = useSafeAreaInsets();
 
   return useMemo(() => {

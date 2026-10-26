@@ -41,10 +41,12 @@ export function SheetModal({ visible, onClosed, children, dismissOnBackdrop = tr
           <Pressable style={styles.fill} onPress={dismissOnBackdrop ? close : undefined} accessibilityLabel="Close" />
         </Animated.View>
         <View style={styles.fill} pointerEvents="box-none" />
-        <Animated.View style={[styles.panel, { paddingBottom: insets.bottom + 16 }, panel]}>
-          <View style={styles.handle} />
-          {children(close)}
-        </Animated.View>
+        <View style={styles.panelWrap}>
+          <Animated.View style={[styles.panel, { paddingBottom: insets.bottom + 16 }, panel]}>
+            <View style={styles.handle} />
+            {children(close)}
+          </Animated.View>
+        </View>
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -57,6 +59,11 @@ const styles = StyleSheet.create({
   backdrop: {
     backgroundColor: '#000',
   },
+  // On web the sheet matches the app's centered 480px column.
+  panelWrap: Platform.select({
+    web: { width: '100%', maxWidth: 480, alignSelf: 'center' },
+    default: {},
+  }),
   panel: {
     marginHorizontal: 8,
     backgroundColor: colors.sheet,
