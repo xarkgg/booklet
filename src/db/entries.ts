@@ -12,12 +12,12 @@ type Row = {
   updated_at: number;
 };
 
-function toEntry(row: Row): Entry {
+async function toEntry(row: Row): Promise<Entry> {
   return {
     id: row.id,
     date: row.date,
     text: row.text,
-    audioUri: row.audio_file ? recordingUri(row.audio_file) : null,
+    audioUri: row.audio_file ? await recordingUri(row.audio_file) : null,
     audioDurationMs: row.audio_duration_ms,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -34,7 +34,7 @@ export async function listEntries(): Promise<Entry[]> {
   const rows = await getDatabase().getAllAsync<Row>(
     'SELECT * FROM entries ORDER BY date DESC, created_at DESC',
   );
-  return rows.map(toEntry);
+  return Promise.all(rows.map(toEntry));
 }
 
 export async function createEntry(input: NewEntry, id: string = newId()): Promise<Entry> {
@@ -68,12 +68,12 @@ export async function deleteEntry(id: string): Promise<void> {
   const db = getDatabase();
   const row = await db.getFirstAsync<Row>('SELECT * FROM entries WHERE id = ?', id);
   await db.runAsync('DELETE FROM entries WHERE id = ?', id);
-  if (row?.audio_file) deleteRecording(row.audio_file);
+  if (row?.audio_file) await deleteRecording(row.audio_file);
 }
 
 export async function deleteAllEntries(): Promise<void> {
   const db = getDatabase();
   const rows = await db.getAllAsync<Row>('SELECT * FROM entries WHERE audio_file IS NOT NULL');
   await db.runAsync('DELETE FROM entries');
-  rows.forEach((r) => r.audio_file && deleteRecording(r.audio_file));
+  await Promise.all(rows.map((r) => (r.audio_file ? deleteRecording(r.audio_file) : undefined)));
 }

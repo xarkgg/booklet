@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, TextInput, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { GestureDetector, ScrollView, usePanGesture } from 'react-native-gesture-handler';
 import Animated, {
@@ -17,6 +17,7 @@ import { formatLong } from '../lib/dates';
 import { colors, fonts } from '../theme';
 import { PageFace, type Page } from './PageFace';
 import { VoiceNote } from './VoiceNote';
+import { Alert } from '../lib/alert';
 
 type Props = {
   layout: BookLayout;

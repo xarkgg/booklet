@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import { Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import {
   RecordingPresets,
   requestRecordingPermissionsAsync,
@@ -11,6 +10,7 @@ import {
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { discardTemp } from '../audio/storage';
 import { formatDuration, formatLong, type DayKey } from '../lib/dates';
+import * as Haptics from '../lib/haptics';
 import { colors, fonts } from '../theme';
 import { SheetModal } from './SheetModal';
 
@@ -53,7 +53,7 @@ function RecordSheetBody({ day, onSave, onClosed }: Omit<Props, 'visible'>) {
         await recorder.prepareToRecordAsync();
         if (cancelled) return;
         recorder.record();
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+        Haptics.impact('medium');
         setPhase('recording');
       } catch {
         if (!cancelled) setPhase('error');
@@ -99,7 +99,7 @@ function RecordSheetBody({ day, onSave, onClosed }: Omit<Props, 'visible'>) {
       const uri = recorder.uri;
       if (!uri) throw new Error('No recording file');
       await onSave(uri, duration);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      Haptics.success();
       close();
     } catch {
       discardTemp(recorder.uri);
@@ -123,9 +123,11 @@ function RecordSheetBody({ day, onSave, onClosed }: Omit<Props, 'visible'>) {
               <Text style={styles.message}>
                 Booklet needs the microphone to record a dream. Recordings stay on this phone.
               </Text>
-              <Pressable onPress={() => Linking.openSettings()} style={[styles.secondaryButton, styles.wide]}>
-                <Text style={styles.secondaryLabel}>Open settings</Text>
-              </Pressable>
+              {Platform.OS !== 'web' && (
+                <Pressable onPress={() => Linking.openSettings()} style={[styles.secondaryButton, styles.wide]}>
+                  <Text style={styles.secondaryLabel}>Open settings</Text>
+                </Pressable>
+              )}
               <Pressable onPress={close} style={styles.textButton}>
                 <Text style={styles.textButtonLabel}>Close</Text>
               </Pressable>

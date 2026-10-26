@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, BackHandler, Pressable, StyleSheet, View } from 'react-native';
+import { BackHandler, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import * as Haptics from 'expo-haptics';
 import Animated, {
   useAnimatedReaction,
   useDerivedValue,
@@ -33,13 +32,15 @@ import { WriteSheet } from '../components/WriteSheet';
 import { newId } from '../db/entries';
 import { useBookLayout } from '../hooks/useBookLayout';
 import { useEntries } from '../hooks/useEntries';
+import { Alert } from '../lib/alert';
 import { formatShort, todayKey, type DayKey } from '../lib/dates';
+import * as Haptics from '../lib/haptics';
 import { colors } from '../theme';
 
 type Mode = 'home' | 'opening' | 'open' | 'closing';
 
-const haptic = (style: Haptics.ImpactFeedbackStyle) => {
-  Haptics.impactAsync(style).catch(() => {});
+const haptic = (style: Haptics.ImpactStyle) => {
+  Haptics.impact(style);
 };
 
 export function BookletScreen() {
@@ -100,7 +101,7 @@ export function BookletScreen() {
   const openBook = useCallback(() => {
     if (mode !== 'home') return;
     setMode('opening');
-    haptic(Haptics.ImpactFeedbackStyle.Medium);
+    haptic('medium');
     textOpacity.value = 0;
     homeChrome.value = withTiming(0, CHROME_OUT);
     sheetShown.value = withDelay(130, withSpring(1, SHEET_SPRING));
@@ -129,7 +130,7 @@ export function BookletScreen() {
   useAnimatedReaction(
     () => open.value <= 0.01,
     (shut, wasShut) => {
-      if (shut && wasShut === false) scheduleOnRN(haptic, Haptics.ImpactFeedbackStyle.Medium);
+      if (shut && wasShut === false) scheduleOnRN(haptic, 'medium');
     },
   );
 
@@ -141,7 +142,7 @@ export function BookletScreen() {
       return;
     }
     setExpanded(true);
-    haptic(Haptics.ImpactFeedbackStyle.Soft);
+    haptic('soft');
     drag.value = 0;
     chrome.value = withTiming(0, { duration: 130 });
     expand.value = withTiming(1, { duration: EXPAND.duration, easing: EXPAND.easing });
@@ -170,12 +171,29 @@ export function BookletScreen() {
     return () => sub.remove();
   }, [expanded, mode, collapsePage, closeBook]);
 
+  // Web: Escape mirrors the Android back button.
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (expanded) {
+        e.preventDefault();
+        collapsePage();
+      } else if (mode === 'open') {
+        e.preventDefault();
+        closeBook();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [expanded, mode, collapsePage, closeBook]);
+
   // ── Data actions ────────────────────────────────────────────────────────
   const saveText = useCallback(
     async (text: string) => {
       const entry = await add({ date: writeDay, text });
       setFocusId(entry.id);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      Haptics.success();
     },
     [add, writeDay],
   );
@@ -183,7 +201,7 @@ export function BookletScreen() {
   const saveRecording = useCallback(
     async (tempUri: string, durationMs: number) => {
       const id = newId();
-      const audioFile = keepRecording(tempUri, id);
+      const audioFile = await keepRecording(tempUri, id);
       await add({ date: writeDay, text: '', audioFile, audioDurationMs: durationMs }, id);
       setFocusId(id);
     },

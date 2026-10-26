@@ -3,6 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import Svg, { Line, Path, Rect } from 'react-native-svg';
 import { PRESS } from '../animation/motion';
+import { canRecord } from '../audio/canRecord';
 import { colors, fonts } from '../theme';
 
 function MicIcon({ color }: { color: string }) {
@@ -58,7 +59,10 @@ function Half({
   );
 }
 
-/** The glossy two-part "Record | Type" pill at the bottom of the home screen. */
+/**
+ * The glossy two-part "Record | Type" pill at the bottom of the home screen.
+ * Where the platform cannot record (some browsers), it shows only Type.
+ */
 export function ActionPill({ onRecord, onType }: { onRecord: () => void; onType: () => void }) {
   return (
     <View style={styles.shadowWrap}>
@@ -68,8 +72,12 @@ export function ActionPill({ onRecord, onType }: { onRecord: () => void; onType:
           style={StyleSheet.absoluteFill}
         />
         <View style={styles.gloss} />
-        <Half label="Record" icon={<MicIcon color={colors.text} />} onPress={onRecord} />
-        <View style={styles.divider} />
+        {canRecord && (
+          <>
+            <Half label="Record" icon={<MicIcon color={colors.text} />} onPress={onRecord} />
+            <View style={styles.divider} />
+          </>
+        )}
         <Half label="Type" icon={<TypeIcon color={colors.text} />} onPress={onType} />
       </View>
     </View>

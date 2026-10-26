@@ -11,12 +11,12 @@ function recordingsDir(): Directory {
   return dir;
 }
 
-export function recordingUri(fileName: string): string {
+export async function recordingUri(fileName: string): Promise<string> {
   return new File(recordingsDir(), fileName).uri;
 }
 
 /** Moves a finished recording out of the recorder's cache into the diary. */
-export function keepRecording(tempUri: string, entryId: string): string {
+export async function keepRecording(tempUri: string, entryId: string): Promise<string> {
   const source = new File(tempUri);
   const ext = source.extension || '.m4a';
   const fileName = `${entryId}${ext.startsWith('.') ? ext : `.${ext}`}`;
@@ -36,7 +36,7 @@ export function discardTemp(tempUri: string | null | undefined) {
   }
 }
 
-export function deleteRecording(fileName: string) {
+export async function deleteRecording(fileName: string): Promise<void> {
   try {
     const f = new File(recordingsDir(), fileName);
     if (f.exists) f.delete();

@@ -5,7 +5,7 @@ export type Entry = {
   /** The day the entry belongs to, `YYYY-MM-DD` local time. */
   date: DayKey;
   text: string;
-  /** Absolute `file://` URI of the voice note, if the entry has one. */
+  /** Playable URI of the voice note (`file://` on native, `blob:` on web), if the entry has one. */
   audioUri: string | null;
   /** Length of the voice note in milliseconds. */
   audioDurationMs: number | null;

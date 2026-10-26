@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '../lib/haptics';
 import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
 import Animated, {
   Extrapolation,
@@ -159,7 +159,7 @@ export function CalendarSheet({ bottomInset, shown, chrome, daysWithEntries, sel
 
   const choose = (d: Date) => {
     const key = toDayKey(d);
-    Haptics.selectionAsync().catch(() => {});
+    Haptics.selection();
     onSelectDay(key === selectedDay ? null : key);
     if (d.getMonth() !== month.m || d.getFullYear() !== month.y) {
       setMonth({ y: d.getFullYear(), m: d.getMonth() });
@@ -174,7 +174,7 @@ export function CalendarSheet({ bottomInset, shown, chrome, daysWithEntries, sel
   const goToday = () => {
     const now = new Date();
     setMonth({ y: now.getFullYear(), m: now.getMonth() });
-    Haptics.selectionAsync().catch(() => {});
+    Haptics.selection();
     onSelectDay(selectedDay === today ? null : today);
   };
 

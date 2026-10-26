@@ -1,7 +1,7 @@
 import { useCallback, useLayoutEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '../lib/haptics';
 import {
   GestureDetector,
   useCompetingGestures,
@@ -104,7 +104,7 @@ export function PageSpread({
 
   const commit = useCallback(
     (dir: 1 | -1) => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+      Haptics.impact('light');
       onTurn(dir);
     },
     [onTurn],

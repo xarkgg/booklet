@@ -1,5 +1,6 @@
 import { StyleSheet, Text } from 'react-native';
 import Animated, { useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
+import { canRecord } from '../audio/canRecord';
 import { colors, fonts } from '../theme';
 import { ActionPill } from './ActionPill';
 
@@ -23,7 +24,9 @@ export function HomeFooter({ bottomInset, shown, interactive, onRecord, onType }
       pointerEvents={interactive ? 'box-none' : 'none'}
     >
       <Text style={styles.helper}>
-        Add a dream by simply recording a{'\n'}voice message or typing it out
+        {canRecord
+          ? 'Add a dream by simply recording a\nvoice message or typing it out'
+          : 'Add a dream by simply\ntyping it out'}
       </Text>
       <ActionPill onRecord={onRecord} onType={onType} />
     </Animated.View>
