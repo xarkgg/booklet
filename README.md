@@ -1,6 +1,6 @@
 # Booklet
 
-A private dream diary for Android and iOS, built with Expo and React Native.
+A private dream diary for Android, iOS and the web, built with Expo and React Native.
 
 Booklet opens like a real notebook. Tap the cover and it swings open and turns
 a quarter turn into a spread of paper pages. Drag the pages to turn them, tap a
@@ -25,6 +25,10 @@ Everything stays on your phone.
 Uninstalling the app removes the diary too, so there is nothing to recover
 later.
 
+On the web, the diary lives in your browser's own storage (IndexedDB) for that
+site, and voice notes are kept there as audio blobs. Nothing leaves the browser.
+Clearing the site's data, or browsing in a private window, erases it.
+
 ## Running it
 
 You need Node.js 20 or newer and the **Expo Go** app on an Android phone (Expo
@@ -42,12 +46,31 @@ Every native module the app uses (Reanimated, Gesture Handler, SQLite, Audio,
 File System, Haptics, SVG, Linear Gradient) ships inside Expo Go, so no
 development build is needed.
 
+### On the web
+
+```bash
+npx expo start --web
+```
+
+It opens as a normal site: a phone-width column on desktop, full screen on a
+phone. Drag with a mouse or a finger, and press Escape to put a page away or
+close the book. Record appears only in browsers that allow microphone
+recording; haptics are silent on the web.
+
+To publish it, build the static site and upload the `dist/` folder to any
+static host (Netlify, Vercel, GitHub Pages, Cloudflare Pages):
+
+```bash
+npx expo export --platform web
+```
+
 Useful checks:
 
 ```bash
 npx tsc --noEmit                         # type check (strict)
 npx expo-doctor                          # dependency and config check
 npx expo export --platform android       # production bundle
+npx expo export --platform web           # static web build in dist/
 ```
 
 ## How to use it
