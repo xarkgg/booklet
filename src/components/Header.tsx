@@ -8,7 +8,7 @@ import Animated, {
 import Svg, { Circle, Line } from 'react-native-svg';
 import { PRESS } from '../animation/motion';
 import { usePressFeedback } from '../animation/usePressFeedback';
-import { HEADER_HEIGHT } from '../hooks/useBookLayout';
+import { HEADER_HEIGHT, type Frame } from '../hooks/useBookLayout';
 import { colors, fonts } from '../theme';
 
 type Props = {
@@ -19,6 +19,8 @@ type Props = {
   chrome: SharedValue<number>;
   onTitlePress?: () => void;
   onMenuPress: () => void;
+  /** Desktop web: where the header sits instead of spanning the top of the screen. */
+  frame?: Frame | null;
 };
 
 function SlidersIcon({ color }: { color: string }) {
@@ -38,7 +40,7 @@ function SlidersIcon({ color }: { color: string }) {
  * Date line and serif heading. The two headings cross-fade with the book's
  * open progress, overlapping briefly as in the reference.
  */
-export function Header({ topInset, dateLabel, open, chrome, onTitlePress, onMenuPress }: Props) {
+export function Header({ topInset, dateLabel, open, chrome, onTitlePress, onMenuPress, frame }: Props) {
   const menuPress = usePressFeedback(PRESS.smallScale);
   const homeTitle = useAnimatedStyle(() => ({
     opacity: interpolate(open.value, [0.05, 0.5], [1, 0], Extrapolation.CLAMP),
@@ -52,7 +54,15 @@ export function Header({ topInset, dateLabel, open, chrome, onTitlePress, onMenu
   }));
 
   return (
-    <Animated.View style={[styles.header, { paddingTop: topInset + 10, height: topInset + HEADER_HEIGHT }, container]}>
+    <Animated.View
+      style={[
+        styles.header,
+        frame
+          ? { left: frame.left, top: frame.top, width: frame.width, paddingTop: 10, height: HEADER_HEIGHT }
+          : { paddingTop: topInset + 10, height: topInset + HEADER_HEIGHT },
+        container,
+      ]}
+    >
       <View style={styles.dateRow}>
         <Text style={styles.date}>{dateLabel}</Text>
         <Pressable

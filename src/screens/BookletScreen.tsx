@@ -3,6 +3,7 @@ import { BackHandler, Platform, Pressable, StyleSheet, View } from 'react-native
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   useAnimatedReaction,
+  useAnimatedStyle,
   useDerivedValue,
   useSharedValue,
   withDelay,
@@ -277,7 +278,15 @@ export function BookletScreen() {
     setPageIndex(0);
   }, []);
 
-  const { bookW, bookH, centerX, centerY, insets } = layout;
+  const { bookW, bookH, centerX, centerY, insets, desktop, homeShift } = layout;
+
+  // Desktop web: the closed book is centred in the window and moves left into
+  // place beside the calendar as it opens. On phones `homeShift` is 0.
+  const stageStyle = useAnimatedStyle(() => {
+    if (homeShift === 0) return {};
+    const p = Math.min(1, Math.max(0, open.value));
+    return { transform: [{ translateX: (1 - p) * homeShift }] };
+  });
 
   return (
     <View style={styles.root}>
@@ -288,46 +297,54 @@ export function BookletScreen() {
         <Pressable style={StyleSheet.absoluteFill} onPress={closeBook} accessibilityLabel="Close the booklet" />
       )}
 
-      <Header
-        topInset={insets.top}
-        dateLabel={formatShort(new Date())}
-        open={open}
-        chrome={chrome}
-        onTitlePress={closeBook}
-        onMenuPress={showSettings}
-      />
-
-      <Notebook layout={layout} open={open} title="Dreams" subtitle="written by you" />
-
-      {mode === 'home' && (
-        <Pressable
-          onPress={openBook}
-          style={{ position: 'absolute', left: centerX - bookW / 2, top: centerY - bookH / 2, width: bookW, height: bookH }}
-          accessibilityRole="button"
-          accessibilityLabel="Open your dreams booklet"
+      <Animated.View style={[StyleSheet.absoluteFill, stageStyle]} pointerEvents="box-none">
+        <Header
+          frame={layout.headerFrame}
+          topInset={insets.top}
+          dateLabel={formatShort(new Date())}
+          open={open}
+          chrome={chrome}
+          onTitlePress={closeBook}
+          onMenuPress={showSettings}
         />
-      )}
 
-      <PageSpread
-        layout={layout}
-        pages={pages}
-        index={index}
-        onTurn={turnPage}
-        onTapPage={expandPage}
-        visible={spreadVisible}
-        textOpacity={textOpacity}
-        interactive={mode === 'open' && !expanded}
-      />
+        <Notebook layout={layout} open={open} title="Dreams" subtitle="written by you" />
 
-      <HomeFooter
-        bottomInset={insets.bottom}
-        shown={homeChrome}
-        interactive={mode === 'home'}
-        onRecord={() => setRecording(true)}
-        onType={() => setWriting(true)}
-      />
+        {mode === 'home' && (
+          <Pressable
+            onPress={openBook}
+            style={{ position: 'absolute', left: centerX - bookW / 2, top: centerY - bookH / 2, width: bookW, height: bookH }}
+            accessibilityRole="button"
+            accessibilityLabel="Open your dreams booklet"
+          />
+        )}
+
+        <PageSpread
+          layout={layout}
+          pages={pages}
+          index={index}
+          onTurn={turnPage}
+          onTapPage={expandPage}
+          visible={spreadVisible}
+          textOpacity={textOpacity}
+          interactive={mode === 'open' && !expanded}
+        />
+
+        <HomeFooter
+          frame={layout.pillFrame}
+          pillShown={desktop ? chrome : undefined}
+          pillMaxWidth={Math.min(340, layout.spreadW - 24)}
+          bottomInset={insets.bottom}
+          shown={homeChrome}
+          interactive={mode === 'home' || (desktop && mode === 'open' && !expanded)}
+          onRecord={() => setRecording(true)}
+          onType={() => setWriting(true)}
+        />
+      </Animated.View>
 
       <CalendarSheet
+        frame={layout.panelFrame}
+        active={mode === 'open' && !expanded}
         bottomInset={insets.bottom}
         shown={sheetShown}
         chrome={chrome}

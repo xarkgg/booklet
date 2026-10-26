@@ -57,9 +57,18 @@ function Half({
  * The glossy two-part "Record | Type" pill at the bottom of the home screen.
  * Where the platform cannot record (some browsers), it shows only Type.
  */
-export function ActionPill({ onRecord, onType }: { onRecord: () => void; onType: () => void }) {
+export function ActionPill({
+  onRecord,
+  onType,
+  maxWidth,
+}: {
+  onRecord: () => void;
+  onType: () => void;
+  /** Caps the pill's width on wide layouts (desktop web). */
+  maxWidth?: number;
+}) {
   return (
-    <View style={styles.shadowWrap}>
+    <View style={[styles.shadowWrap, maxWidth != null && { maxWidth }]}>
       <View style={styles.pill}>
         <LinearGradient
           colors={[colors.pillTop, colors.pillBottom]}

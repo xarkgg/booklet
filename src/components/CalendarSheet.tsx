@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import * as Haptics from '../lib/haptics';
 import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
@@ -14,7 +14,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { PRESS } from '../animation/motion';
 import { usePressFeedback } from '../animation/usePressFeedback';
-import { SHEET_COLLAPSED } from '../hooks/useBookLayout';
+import { SHEET_COLLAPSED, type Frame } from '../hooks/useBookLayout';
 import {
   WEEK_LABELS,
   formatMonth,
@@ -39,6 +39,10 @@ type Props = {
   daysWithEntries: Set<DayKey>;
   selectedDay: DayKey | null;
   onSelectDay: (day: DayKey | null) => void;
+  /** Desktop web: dock the calendar as a side panel here, showing the whole month. */
+  frame?: Frame | null;
+  /** Docked panel only: whether it takes clicks (it stays mounted while hidden). */
+  active?: boolean;
 };
 
 function Chevron({ dir, color }: { dir: 'left' | 'right'; color: string }) {
@@ -109,18 +113,26 @@ function DayCell({ date, dimmed, hasEntry, selected, today, onPress }: DayCellPr
  * month) to see the whole month. Tapping a day shows that day's entries;
  * tapping it again shows every entry.
  */
-export function CalendarSheet({ bottomInset, shown, chrome, daysWithEntries, selectedDay, onSelectDay }: Props) {
+export function CalendarSheet({ bottomInset, shown, chrome, daysWithEntries, selectedDay, onSelectDay, frame, active = true }: Props) {
+  const docked = !!frame;
   const focus = selectedDay ? fromDayKey(selectedDay) : new Date();
   const [month, setMonth] = useState(() => ({ y: focus.getFullYear(), m: focus.getMonth() }));
-  const expanded = useSharedValue(0);
+  const expanded = useSharedValue(docked ? 1 : 0);
   const dragStart = useSharedValue(0);
   const today = todayKey();
 
   const grid = useMemo(() => monthGrid(month.y, month.m), [month]);
   const week = useMemo(() => weekOf(selectedDay ? fromDayKey(selectedDay) : new Date()), [selectedDay]);
-  const [monthOpen, setMonthOpen] = useState(false);
+  const [monthOpen, setMonthOpen] = useState(docked);
   const extra = (grid.length - 1) * ROW + 6;
-  const collapsedH = SHEET_COLLAPSED + bottomInset;
+  // Docked: no grab handle, so a little shorter.
+  const collapsedH = docked ? SHEET_COLLAPSED - 6 : SHEET_COLLAPSED + bottomInset;
+
+  // The docked panel shows the whole month; the bottom sheet starts on the week.
+  useEffect(() => {
+    setMonthOpen(docked);
+    expanded.value = docked ? 1 : 0;
+  }, [docked, expanded]);
 
   const setExpanded = (v: number) => {
     setMonthOpen(v === 1);
@@ -128,6 +140,7 @@ export function CalendarSheet({ bottomInset, shown, chrome, daysWithEntries, sel
   };
 
   const pan = usePanGesture({
+    enabled: !docked,
     activeOffsetY: [-8, 8],
     onBegin: () => {
       'worklet';
@@ -148,6 +161,10 @@ export function CalendarSheet({ bottomInset, shown, chrome, daysWithEntries, sel
   const sheetStyle = useAnimatedStyle(() => {
     const height = collapsedH + Math.max(0, expanded.value) * extra;
     const hidden = Math.min(shown.value, chrome.value);
+    if (docked) {
+      // Slides in from the side with the same timing as the bottom sheet.
+      return { height, opacity: hidden, transform: [{ translateX: (1 - hidden) * 40 }] };
+    }
     return {
       height,
       transform: [{ translateY: (1 - hidden) * (height + 40) + Math.min(0, expanded.value) * -extra }],
@@ -187,10 +204,19 @@ export function CalendarSheet({ bottomInset, shown, chrome, daysWithEntries, sel
   const headerMonth = formatMonth(month.y, month.m);
 
   return (
-    <Animated.View style={[styles.sheet, { paddingBottom: bottomInset }, sheetStyle]}>
+    <Animated.View
+      style={[
+        styles.sheet,
+        frame
+          ? [styles.docked, { left: frame.left, top: frame.top, width: frame.width }]
+          : [styles.bottom, { paddingBottom: bottomInset }],
+        sheetStyle,
+      ]}
+      pointerEvents={docked && !active ? 'none' : 'auto'}
+    >
       <GestureDetector gesture={pan}>
         <View>
-          <View style={styles.handle} />
+          {!docked && <View style={styles.handle} />}
           <View style={styles.headerRow}>
             <Pressable
               style={styles.monthButton}
@@ -268,14 +294,20 @@ export function CalendarSheet({ bottomInset, shown, chrome, daysWithEntries, sel
 const styles = StyleSheet.create({
   sheet: {
     position: 'absolute',
+    backgroundColor: colors.sheet,
+    paddingHorizontal: 14,
+    overflow: 'hidden',
+  },
+  bottom: {
     left: 8,
     right: 8,
     bottom: 0,
-    backgroundColor: colors.sheet,
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,
-    paddingHorizontal: 14,
-    overflow: 'hidden',
+  },
+  docked: {
+    borderRadius: 22,
+    paddingTop: 14,
   },
   handle: {
     alignSelf: 'center',
