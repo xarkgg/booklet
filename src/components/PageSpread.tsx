@@ -228,7 +228,12 @@ export function PageSpread({
   return (
     <GestureDetector gesture={gesture}>
       <Animated.View
-        style={[styles.spread, { left: spreadLeft, top: spreadTop, width: w, height: h }, container]}
+        style={[
+          styles.spread,
+          { left: spreadLeft, top: spreadTop, width: w, height: h },
+          layout.desktop && styles.pointer,
+          container,
+        ]}
         pointerEvents={interactive ? 'auto' : 'none'}
       >
         <View style={[styles.paper, { width: w, height: h }]}>
@@ -327,5 +332,8 @@ const styles = StyleSheet.create({
   },
   shadow: {
     backgroundColor: '#000',
+  },
+  pointer: {
+    cursor: 'pointer',
   },
 });

@@ -4,6 +4,7 @@ import Animated from 'react-native-reanimated';
 import Svg, { Line, Path, Rect } from 'react-native-svg';
 import { usePressFeedback } from '../animation/usePressFeedback';
 import { canRecord } from '../audio/canRecord';
+import { hoverable } from '../lib/hover';
 import { colors, fonts } from '../theme';
 
 function MicIcon({ color }: { color: string }) {
@@ -42,6 +43,7 @@ function Half({
       style={styles.half}
       onPress={onPress}
       {...handlers}
+      {...hoverable('pill')}
       accessibilityRole="button"
       accessibilityLabel={label}
     >

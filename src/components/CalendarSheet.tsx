@@ -15,6 +15,7 @@ import Svg, { Circle, Path } from 'react-native-svg';
 import { PRESS } from '../animation/motion';
 import { usePressFeedback } from '../animation/usePressFeedback';
 import { SHEET_COLLAPSED, type Frame } from '../hooks/useBookLayout';
+import { hoverable } from '../lib/hover';
 import {
   WEEK_LABELS,
   formatMonth,
@@ -84,6 +85,7 @@ function DayCell({ date, dimmed, hasEntry, selected, today, onPress }: DayCellPr
     <Pressable
       onPress={onPress}
       {...press.handlers}
+      {...hoverable('day')}
       style={styles.cell}
       accessibilityRole="button"
       accessibilityState={{ selected }}
@@ -220,6 +222,7 @@ export function CalendarSheet({ bottomInset, shown, chrome, daysWithEntries, sel
           <View style={styles.headerRow}>
             <Pressable
               style={styles.monthButton}
+              {...hoverable('soft')}
               onPress={() => setExpanded(expanded.value > 0.5 ? 0 : 1)}
               accessibilityRole="button"
               accessibilityLabel={`${headerMonth}, show month`}
@@ -228,14 +231,14 @@ export function CalendarSheet({ bottomInset, shown, chrome, daysWithEntries, sel
               <Chevron dir="right" color={colors.text} />
             </Pressable>
             <Animated.View style={[styles.nav, navStyle]} pointerEvents={monthOpen ? 'auto' : 'none'}>
-              <Pressable hitSlop={10} onPress={() => shiftMonth(-1)} accessibilityLabel="Previous month">
+              <Pressable hitSlop={10} onPress={() => shiftMonth(-1)} {...hoverable('soft')} accessibilityLabel="Previous month">
                 <Chevron dir="left" color={colors.textMuted} />
               </Pressable>
-              <Pressable hitSlop={10} onPress={() => shiftMonth(1)} accessibilityLabel="Next month">
+              <Pressable hitSlop={10} onPress={() => shiftMonth(1)} {...hoverable('soft')} accessibilityLabel="Next month">
                 <Chevron dir="right" color={colors.textMuted} />
               </Pressable>
             </Animated.View>
-            <Pressable hitSlop={10} onPress={goToday} accessibilityRole="button" accessibilityLabel="Today">
+            <Pressable hitSlop={10} onPress={goToday} {...hoverable('soft')} accessibilityRole="button" accessibilityLabel="Today">
               <TodayIcon color={colors.text} />
             </Pressable>
           </View>

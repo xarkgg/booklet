@@ -9,6 +9,7 @@ import Svg, { Circle, Line } from 'react-native-svg';
 import { PRESS } from '../animation/motion';
 import { usePressFeedback } from '../animation/usePressFeedback';
 import { HEADER_HEIGHT, type Frame } from '../hooks/useBookLayout';
+import { hoverable } from '../lib/hover';
 import { colors, fonts } from '../theme';
 
 type Props = {
@@ -70,6 +71,7 @@ export function Header({ topInset, dateLabel, open, chrome, onTitlePress, onMenu
           {...menuPress.handlers}
           hitSlop={12}
           style={styles.menu}
+          {...hoverable('soft')}
           accessibilityRole="button"
           accessibilityLabel="Booklet settings"
         >

@@ -18,6 +18,7 @@ import { colors, fonts } from '../theme';
 import { PageFace, type Page } from './PageFace';
 import { VoiceNote } from './VoiceNote';
 import { Alert } from '../lib/alert';
+import { hoverable } from '../lib/hover';
 
 type Props = {
   layout: BookLayout;
@@ -178,7 +179,13 @@ export function EntryCard({ layout, page, position, count, expand, drag, onDismi
                 <Text style={styles.done}>Done</Text>
               </Pressable>
             ) : (
-              <Pressable onPress={openMenu} hitSlop={10} accessibilityRole="button" accessibilityLabel="Page options">
+              <Pressable
+                onPress={openMenu}
+                hitSlop={10}
+                {...hoverable('soft')}
+                accessibilityRole="button"
+                accessibilityLabel="Page options"
+              >
                 <MoreIcon />
               </Pressable>
             )}
