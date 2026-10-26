@@ -52,8 +52,12 @@ development build is needed.
 npx expo start --web
 ```
 
-It opens as a normal site: a phone-width column on desktop, full screen on a
-phone. Drag with a mouse or a finger, and press Escape to put a page away or
+It opens as a normal site. On a phone, or a browser window narrower than
+1024px or shorter than 640px, it is the phone layout in a centered column. On a
+larger window it switches (live, as you resize) to a desktop layout: a bigger
+book with the calendar docked beside it, the Record/Type pill under the book,
+Type and Record as centered dialogs, and a lifted page as a large centered
+card. Drag with a mouse or a finger, and press Escape to put a page away or
 close the book. Record appears only in browsers that allow microphone
 recording; haptics are silent on the web.
 
